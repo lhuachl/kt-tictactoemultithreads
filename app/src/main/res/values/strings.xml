@@ -7,6 +7,22 @@
     <string name="player_o_turn">Turno: Jugador O</string>
     <string name="time_remaining">Tiempo: %1$d segundos</string>
     
+    <!-- Modos de juego -->
+    <string name="player_vs_player">Jugador vs Jugador</string>
+    <string name="player_vs_ai">Jugador vs IA</string>
+    <string name="difficulty_label">Dificultad:</string>
+    
+    <!-- Estados de la IA -->
+    <string name="ai_thinking">IA pensando...</string>
+    <string name="ai_move_completed">IA movió a (%1$d, %2$d)</string>
+    <string name="ai_error">Error en IA: %1$s</string>
+    <string name="ai_progress">%1$s</string>
+    
+    <!-- Niveles de dificultad -->
+    <string name="difficulty_easy">Fácil - Aleatorio</string>
+    <string name="difficulty_medium">Medio - Defensivo</string>
+    <string name="difficulty_hard">Difícil - Minimax</string>
+    
     <!-- Botones -->
     <string name="new_game">Nuevo Juego</string>
     <string name="reset_stats">Reiniciar Estadísticas</string>

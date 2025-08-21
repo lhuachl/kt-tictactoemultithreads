@@ -3,27 +3,27 @@ package com.example.tictactoe_multithreads
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.widget.Button
-import android.widget.GridLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.tictactoe_multithreads.ai.DifficultyLevel
 import com.example.tictactoe_multithreads.data.GameResult
 import com.example.tictactoe_multithreads.data.GameStatistics
 import com.example.tictactoe_multithreads.data.Player
+import com.example.tictactoe_multithreads.game.AIGameController
 import com.example.tictactoe_multithreads.game.TicTacToeGame
 import com.example.tictactoe_multithreads.timer.GameTimer
 
 /**
  * Actividad principal que maneja la interfaz y lógica del juego Tic Tac Toe
- * Implementa multithreading para el temporizador y manejo de eventos
+ * Implementa multithreading para el temporizador y IA con diferentes niveles
  */
-class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
+class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener, AIGameController.AIGameListener {
     
     // Componentes de la interfaz
     private lateinit var tvCurrentPlayer: TextView
@@ -31,6 +31,11 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
     private lateinit var gridBoard: GridLayout
     private lateinit var btnNewGame: Button
     private lateinit var btnResetStats: Button
+    private lateinit var btnPlayerVsPlayer: Button
+    private lateinit var btnPlayerVsAI: Button
+    private lateinit var llDifficultySelector: LinearLayout
+    private lateinit var spinnerDifficulty: Spinner
+    private lateinit var tvAIStatus: TextView
     private lateinit var tvPlayerXWins: TextView
     private lateinit var tvPlayerOWins: TextView
     private lateinit var tvDraws: TextView
@@ -41,9 +46,14 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
     private lateinit var game: TicTacToeGame
     private lateinit var gameTimer: GameTimer
     private lateinit var gameStatistics: GameStatistics
+    private lateinit var aiGameController: AIGameController
     
     // Matriz de botones del tablero
     private lateinit var boardButtons: Array<Array<Button>>
+    
+    // Estado del juego
+    private var isVsAIMode = false
+    private var isWaitingForAI = false
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +64,7 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         initializeViews()
         initializeGameLogic()
         setupEventListeners()
+        setupDifficultySpinner()
         createGameBoard()
         updateUI()
         startNewGame()
@@ -79,6 +90,11 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         gridBoard = findViewById(R.id.gridBoard)
         btnNewGame = findViewById(R.id.btnNewGame)
         btnResetStats = findViewById(R.id.btnResetStats)
+        btnPlayerVsPlayer = findViewById(R.id.btnPlayerVsPlayer)
+        btnPlayerVsAI = findViewById(R.id.btnPlayerVsAI)
+        llDifficultySelector = findViewById(R.id.llDifficultySelector)
+        spinnerDifficulty = findViewById(R.id.spinnerDifficulty)
+        tvAIStatus = findViewById(R.id.tvAIStatus)
         tvPlayerXWins = findViewById(R.id.tvPlayerXWins)
         tvPlayerOWins = findViewById(R.id.tvPlayerOWins)
         tvDraws = findViewById(R.id.tvDraws)
@@ -93,6 +109,8 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         game = TicTacToeGame()
         gameTimer = GameTimer(this)
         gameStatistics = GameStatistics()
+        aiGameController = AIGameController(Player.X, DifficultyLevel.EASY)
+        aiGameController.setAIGameListener(this)
     }
 
     /**
@@ -106,6 +124,71 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         btnResetStats.setOnClickListener {
             showResetStatsConfirmation()
         }
+        
+        btnPlayerVsPlayer.setOnClickListener {
+            setGameMode(false)
+        }
+        
+        btnPlayerVsAI.setOnClickListener {
+            setGameMode(true)
+        }
+        
+        spinnerDifficulty.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedLevel = DifficultyLevel.values()[position]
+                aiGameController.setDifficultyLevel(selectedLevel)
+                showAIPerformanceInfo(selectedLevel)
+            }
+            
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
+
+    /**
+     * Configura el spinner de dificultad
+     */
+    private fun setupDifficultySpinner() {
+        val difficultyLevels = DifficultyLevel.values().map { it.displayName }
+        val adapter = ArrayAdapter(this, R.layout.spinner_item, difficultyLevels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerDifficulty.adapter = adapter
+    }
+
+    /**
+     * Establece el modo de juego (PvP o PvAI)
+     */
+    private fun setGameMode(vsAI: Boolean) {
+        isVsAIMode = vsAI
+        
+        // Actualizar apariencia de botones
+        if (vsAI) {
+            btnPlayerVsAI.setBackgroundColor(ContextCompat.getColor(this, R.color.button_color))
+            btnPlayerVsPlayer.setBackgroundColor(ContextCompat.getColor(this, R.color.button_disabled))
+            llDifficultySelector.visibility = View.VISIBLE
+        } else {
+            btnPlayerVsPlayer.setBackgroundColor(ContextCompat.getColor(this, R.color.button_color))
+            btnPlayerVsAI.setBackgroundColor(ContextCompat.getColor(this, R.color.button_disabled))
+            llDifficultySelector.visibility = View.GONE
+            tvAIStatus.visibility = View.GONE
+        }
+        
+        startNewGame()
+    }
+
+    /**
+     * Muestra información sobre el rendimiento de la IA
+     */
+    private fun showAIPerformanceInfo(level: DifficultyLevel) {
+        val stats = aiGameController.getAIPerformanceStats()
+        val message = buildString {
+            appendLine("Nivel: ${stats.level}")
+            appendLine("Descripción: ${stats.description}")
+            appendLine("Tiempo promedio: ${stats.averageThinkingTime}")
+            appendLine("Probabilidad de ganar: ${stats.winProbability}")
+            appendLine("Algoritmo: ${stats.algorithm}")
+        }
+        
+        Toast.makeText(this, "Dificultad cambiada a: ${level.displayName}", Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -152,7 +235,13 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
      * Maneja el click en una celda del tablero
      */
     private fun onCellClicked(row: Int, col: Int) {
-        if (!gameTimer.isTimerRunning() || game.isGameFinished()) {
+        if (!gameTimer.isTimerRunning() || game.isGameFinished() || isWaitingForAI) {
+            return
+        }
+        
+        // En modo IA, solo permitir clicks del jugador humano
+        if (isVsAIMode && aiGameController.isAITurn(game.getCurrentPlayer())) {
+            Toast.makeText(this, "Espera el turno de la IA", Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -162,9 +251,32 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
             
             if (game.isGameFinished()) {
                 finishGame()
+            } else if (isVsAIMode && aiGameController.isAITurn(game.getCurrentPlayer())) {
+                // Es turno de la IA
+                makeAIMove()
             }
         } else {
             Toast.makeText(this, "Movimiento inválido", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Hace que la IA ejecute su movimiento
+     */
+    private fun makeAIMove() {
+        isWaitingForAI = true
+        
+        aiGameController.makeAIMove(game) { row, col ->
+            // Callback ejecutado cuando la IA ha decidido su movimiento
+            if (game.makeMove(row, col)) {
+                updateBoardUI()
+                updateCurrentPlayerUI()
+                
+                if (game.isGameFinished()) {
+                    finishGame()
+                }
+            }
+            isWaitingForAI = false
         }
     }
 
@@ -174,9 +286,20 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
     private fun startNewGame() {
         gameTimer.stopTimer()
         game.resetGame()
+        isWaitingForAI = false
+        
+        // Cancelar cualquier cálculo de IA en progreso
+        aiGameController.cancelAICalculation()
+        
         updateBoardUI()
         updateCurrentPlayerUI()
+        updateAIStatusUI()
         gameTimer.startTimer()
+        
+        // Si es modo IA y la IA juega primero (X), hacer que mueva
+        if (isVsAIMode && aiGameController.isAITurn(game.getCurrentPlayer())) {
+            makeAIMove()
+        }
     }
 
     /**
@@ -184,6 +307,9 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
      */
     private fun finishGame() {
         gameTimer.stopTimer()
+        aiGameController.cancelAICalculation()
+        isWaitingForAI = false
+        
         val timeElapsed = gameTimer.getElapsedTime()
         val result = game.getGameResult()
         
@@ -222,11 +348,19 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
      */
     private fun updateCurrentPlayerUI() {
         val currentPlayer = game.getCurrentPlayer()
-        val playerText = if (currentPlayer == Player.X) {
-            getString(R.string.player_x_turn)
+        val playerText = if (isVsAIMode) {
+            when {
+                aiGameController.isAITurn(currentPlayer) -> "Turno: IA (${currentPlayer.symbol})"
+                else -> "Turno: Humano (${currentPlayer.symbol})"
+            }
         } else {
-            getString(R.string.player_o_turn)
+            if (currentPlayer == Player.X) {
+                getString(R.string.player_x_turn)
+            } else {
+                getString(R.string.player_o_turn)
+            }
         }
+        
         tvCurrentPlayer.text = playerText
         
         val playerColor = if (currentPlayer == Player.X) {
@@ -235,6 +369,17 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
             R.color.player_o_color
         }
         tvCurrentPlayer.setTextColor(ContextCompat.getColor(this, playerColor))
+    }
+
+    /**
+     * Actualiza la interfaz del estado de la IA
+     */
+    private fun updateAIStatusUI() {
+        if (isVsAIMode) {
+            tvAIStatus.visibility = if (isWaitingForAI) View.VISIBLE else View.GONE
+        } else {
+            tvAIStatus.visibility = View.GONE
+        }
     }
 
     /**
@@ -255,6 +400,7 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         updateBoardUI()
         updateCurrentPlayerUI()
         updateStatisticsUI()
+        updateAIStatusUI()
     }
 
     /**
@@ -262,11 +408,29 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
      */
     private fun showGameResult(result: GameResult, timeElapsed: Int, movesCount: Int) {
         val winnerText = when (result) {
-            GameResult.PLAYER_X_WINS -> getString(R.string.player_x_wins_msg)
-            GameResult.PLAYER_O_WINS -> getString(R.string.player_o_wins_msg)
+            GameResult.PLAYER_X_WINS -> {
+                if (isVsAIMode && aiGameController.getAIPlayer() == Player.X) {
+                    "¡La IA gana!"
+                } else {
+                    getString(R.string.player_x_wins_msg)
+                }
+            }
+            GameResult.PLAYER_O_WINS -> {
+                if (isVsAIMode && aiGameController.getAIPlayer() == Player.O) {
+                    "¡La IA gana!"
+                } else {
+                    getString(R.string.player_o_wins_msg)
+                }
+            }
             GameResult.DRAW -> getString(R.string.game_draw_msg)
             GameResult.TIME_UP -> getString(R.string.time_up_msg)
             GameResult.ONGOING -> "Juego en curso"
+        }
+        
+        val difficultyInfo = if (isVsAIMode) {
+            "\nDificultad: ${aiGameController.getDifficultyLevel().displayName}"
+        } else {
+            ""
         }
         
         val message = buildString {
@@ -274,6 +438,7 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
             appendLine(getString(R.string.time_elapsed_label, timeElapsed))
             appendLine(getString(R.string.moves_made_label, movesCount))
             appendLine(getString(R.string.game_number_label, gameStatistics.totalGames))
+            append(difficultyInfo)
         }
         
         AlertDialog.Builder(this)
@@ -330,9 +495,37 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         Toast.makeText(this, getString(R.string.game_started_msg), Toast.LENGTH_SHORT).show()
     }
 
+    // Implementación de AIGameController.AIGameListener
+
+    override fun onAIThinking() {
+        isWaitingForAI = true
+        tvAIStatus.text = getString(R.string.ai_thinking)
+        tvAIStatus.visibility = View.VISIBLE
+    }
+
+    override fun onAIMoveCompleted(row: Int, col: Int) {
+        tvAIStatus.text = getString(R.string.ai_move_completed, row + 1, col + 1)
+        // Ocultar el mensaje después de un breve delay
+        tvAIStatus.postDelayed({
+            updateAIStatusUI()
+        }, 1000)
+    }
+
+    override fun onAIError(error: String) {
+        isWaitingForAI = false
+        tvAIStatus.text = getString(R.string.ai_error, error)
+        tvAIStatus.setTextColor(ContextCompat.getColor(this, R.color.accent_color))
+        Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+    }
+
+    override fun onAIProgressUpdate(message: String) {
+        tvAIStatus.text = getString(R.string.ai_progress, message)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         gameTimer.stopTimer()
+        aiGameController.cleanup()
     }
 
     override fun onPause() {
@@ -340,6 +533,7 @@ class MainActivity : AppCompatActivity(), GameTimer.GameTimerListener {
         if (gameTimer.isTimerRunning()) {
             gameTimer.pauseTimer()
         }
+        aiGameController.cancelAICalculation()
     }
 
     override fun onResume() {
