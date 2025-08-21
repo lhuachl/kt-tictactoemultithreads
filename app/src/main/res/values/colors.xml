@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Colores principales del tema -->
+    <color name="primary_color">#FF2196F3</color>
+    <color name="primary_dark">#FF1976D2</color>
+    <color name="accent_color">#FFFF5722</color>
+    
+    <!-- Colores de fondo -->
+    <color name="background_color">#FFF5F5F5</color>
+    <color name="card_background">#FFFFFFFF</color>
+    <color name="board_background">#FF424242</color>
+    
+    <!-- Colores de texto -->
+    <color name="text_color">#FF212121</color>
+    <color name="text_secondary">#FF757575</color>
+    <color name="timer_color">#FFFF5722</color>
+    
+    <!-- Colores de botones -->
+    <color name="button_color">#FF2196F3</color>
+    <color name="button_secondary_color">#FFFF5722</color>
+    <color name="button_disabled">#FFBDBDBD</color>
+    
+    <!-- Colores del juego -->
+    <color name="player_x_color">#FF4CAF50</color>
+    <color name="player_o_color">#FFF44336</color>
+    <color name="cell_background">#FFFFFFFF</color>
+    <color name="cell_border">#FFBDBDBD</color>
+    <color name="winning_line">#FFFFC107</color>
+    
+</resources>

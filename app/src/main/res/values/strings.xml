@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">Tic Tac Toe Multithreads</string>
+    
+    <!-- Títulos y mensajes principales -->
+    <string name="game_title">Tic Tac Toe</string>
+    <string name="player_x_turn">Turno: Jugador X</string>
+    <string name="player_o_turn">Turno: Jugador O</string>
+    <string name="time_remaining">Tiempo: %1$d segundos</string>
+    
+    <!-- Botones -->
+    <string name="new_game">Nuevo Juego</string>
+    <string name="reset_stats">Reiniciar Estadísticas</string>
+    
+    <!-- Estadísticas -->
+    <string name="game_statistics">Estadísticas del Juego</string>
+    <string name="player_x_wins">X Gana: %1$d</string>
+    <string name="player_o_wins">O Gana: %1$d</string>
+    <string name="draws">Empates: %1$d</string>
+    <string name="total_games">Total: %1$d juegos</string>
+    <string name="average_time">Tiempo promedio: %1$ds</string>
+    
+    <!-- Mensajes de resultado -->
+    <string name="player_x_wins_msg">¡Jugador X gana!</string>
+    <string name="player_o_wins_msg">¡Jugador O gana!</string>
+    <string name="game_draw_msg">¡Empate!</string>
+    <string name="time_up_msg">¡Tiempo agotado! Empate por tiempo</string>
+    
+    <!-- Mensajes del temporizador -->
+    <string name="game_started_msg">Juego iniciado - ¡Buena suerte!</string>
+    <string name="time_warning_msg">¡Solo quedan 10 segundos!</string>
+    <string name="game_finished_msg">Juego terminado</string>
+    
+    <!-- Resultados del juego -->
+    <string name="game_result_title">Resultado del Juego</string>
+    <string name="winner_label">Ganador: %1$s</string>
+    <string name="time_elapsed_label">Tiempo transcurrido: %1$d segundos</string>
+    <string name="moves_made_label">Movimientos realizados: %1$d</string>
+    <string name="game_number_label">Juego número: %1$d</string>
+    
+</resources>
